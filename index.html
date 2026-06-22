@@ -490,11 +490,11 @@ async function syncFromKK() {
     const data=await res.json();
     const raw=Array.isArray(data)?data:(data.data||[]);
     projects=raw.map(p=>({
-      code:String(p.project_no||p.external_id||p.id||''),
+      id:p.id||0, code:String(p.project_no||p.external_id||p.id||''),
       name:p.name||p.title||'Ukjent',
       client:p.address||p.city||'',
       status:mapStatus(p.status),
-      note:p.description||''     })).sort((a,b) => parseInt(b.code) - parseInt(a.code))
+      note:p.description||''     })).sort((a,b) => b.id - a.id)
     }));
     save('strokent_projects',projects);
     btn.innerHTML='<i class="ti ti-refresh"></i> Synkroniser'; btn.disabled=false;
