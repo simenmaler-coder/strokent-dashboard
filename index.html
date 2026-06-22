@@ -533,7 +533,7 @@ async function syncFromKK() {
     const data = await res.json();
     const raw = Array.isArray(data) ? data : (data.data || []);
     projects = raw.map(p => ({
-      code: String(p.projectNumber || p.number || p.id || ''),
+      code: String(p.external_id || p.number || p.id || ''),
       name: p.name || p.title || 'Ukjent',
       client: p.customerName || (p.contact && p.contact.name) || '',
       status: mapKKStatus(p.status),
@@ -621,7 +621,7 @@ async function loadKKProjects(keyOverride) {
     container.style.display = 'block';
     container.innerHTML = projs.slice(0,5).map(p =>
       `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">
-        <span class="proj-code">${p.projectNumber||p.number||p.id}</span>
+        <span class="proj-code">${p.external_id||p.number||p.id}</span>
         <span style="font-size:13px;font-weight:500;">${p.name||p.title||'Ukjent'}</span>
         <span style="margin-left:auto;font-size:11px;color:var(--text3);">${p.status||''}</span>
       </div>`
