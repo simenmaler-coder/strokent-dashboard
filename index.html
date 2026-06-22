@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Strøkent AS — Dashboard</title>
+<style>
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --surface2: #f0eeea;
+    --border: #e0ddd7;
+    --text: #1a1917;
+    --text2: #6b6860;
+    --text3: #9e9b94;
+    --blue: #1a5fa8;
+    --blue-bg: #e8f0fb;
+    --green: #2a7a4b;
+    --green-bg: #e6f4ec;
+    --amber: #8a5c0a;
+    --amber-bg: #fdf0d8;
+    --gray-bg: #eeece8;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; }
+  a { text-decoration: none; color: inherit; }
+
+  /* Layout */
+  .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 52px; position: sticky; top: 0; z-index: 100; }
+  .topbar-left { display: flex; align-items: center; gap: 10px; }
+  .logo-mark { width: 28px; height: 28px; background: var(--text); border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+  .logo-mark svg { width: 16px; height: 16px; fill: white; }
+  .topbar h1 { font-size: 15px; font-weight: 600; letter-spacing: -0.2px; }
+  .topbar-date { font-size: 13px; color: var(--text2); }
+
+  .main { display: grid; grid-template-columns: 300px 1fr; gap: 20px; padding: 20px 24px; max-width: 1200px; margin: 0 auto; }
+
+  /* Cards */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .card-head { padding: 14px 16px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 7px; }
+  .card-title svg { width: 15px; height: 15px; stroke: var(--text2); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+  .card-body { padding: 14px 16px; }
+
+  /* Calendar */
+  .cal-nav { display: flex; align-items: center; gap: 6px; }
+  .cal-nav button { background: none; border: none; cursor: pointer; color: var(--text2); padding: 2px 5px; border-radius: 4px; font-size: 14px; line-height: 1; }
+  .cal-nav button:hover { background: var(--surface2); }
+  .cal-nav span { font-size: 12px; font-weight: 600; color: var(--text); min-width: 100px; text-align: center; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 1px; margin-top: 2px; }
+  .cal-dn { font-size: 10px; color: var(--text3); text-align: center; padding: 4px 0 6px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.4px; }
+  .cal-day { font-size: 12px; text-align: center; padding: 5px 2px; border-radius: 5px; cursor: pointer; color: var(--text2); position: relative; }
+  .cal-day:hover { background: var(--surface2); }
+  .cal-day.today { background: var(--text); color: white; font-weight: 600; }
+  .cal-day.today:hover { background: #333; }
+  .cal-day.selected:not(.today) { background: var(--blue-bg); color: var(--blue); font-weight: 600; }
+  .cal-day.has-event:not(.today)::after { content:''; position:absolute; bottom:2px; left:50%; transform:translateX(-50%); width:4px; height:4px; border-radius:50%; background:var(--blue); }
+  .cal-day.today.has-event::after { background: rgba(255,255,255,0.7); }
+  .cal-day.other { color: var(--text3); }
+
+  /* Events */
+  .events-section { margin-top: 14px; }
+  .events-date { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .event-item { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border-radius: var(--radius-sm); margin-bottom: 5px; position: relative; }
+  .event-item:last-child { margin-bottom: 0; }
+  .ev-befaring { background: var(--blue-bg); }
+  .ev-mote { background: var(--green-bg); }
+  .ev-oppgave { background: var(--amber-bg); }
+  .event-dot { width: 7px; height: 7px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+  .ev-befaring .event-dot { background: var(--blue); }
+  .ev-mote .event-dot { background: var(--green); }
+  .ev-oppgave .event-dot { background: var(--amber); }
+  .event-info { flex: 1; min-width: 0; }
+  .event-title { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .event-meta { font-size: 11px; color: var(--text2); margin-top: 1px; }
+  .event-del { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 16px; line-height: 1; padding: 0 2px; opacity: 0; transition: opacity 0.15s; }
+  .event-item:hover .event-del { opacity: 1; }
+  .events-empty { font-size: 13px; color: var(--text3); padding: 6px 2px; }
+  .legend { display: flex; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text2); }
+  .legend-dot { width: 7px; height: 7px; border-radius: 50%; }
+
+  /* Add event button */
+  .add-btn { font-size: 12px; font-weight: 500; color: var(--text2); background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 4px 10px; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+  .add-btn:hover { background: var(--border); }
+
+  /* Right column */
+  .right-col { display: flex; flex-direction: column; gap: 16px; }
+
+  /* Shortcuts */
+  .shortcut-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
+  .shortcut { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 8px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); cursor: pointer; transition: border-color 0.15s, background 0.15s; text-align: center; }
+  .shortcut:hover { background: var(--surface2); border-color: #ccc; }
+  .shortcut-icon { width: 38px; height: 38px; border-radius: 9px; display: flex; align-items: center; justify-content: center; }
+  .shortcut-icon svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .si-pogo { background: #e8f0fb; color: #1a5fa8; }
+  .si-kk { background: #e6f4ec; color: #2a7a4b; }
+  .si-mal { background: #fdf0d8; color: #8a5c0a; }
+  .si-dnb { background: #fde8e8; color: #a83232; }
+  .shortcut-name { font-size: 12px; font-weight: 500; color: var(--text); }
+  .shortcut-sub { font-size: 11px; color: var(--text3); }
+
+  /* Projects */
+  .proj-table { width: 100%; border-collapse: collapse; }
+  .proj-table th { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.4px; padding: 0 10px 8px; text-align: left; border-bottom: 1px solid var(--border); }
+  .proj-table td { padding: 10px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .proj-table tr:last-child td { border-bottom: none; }
+  .proj-table tr:hover td { background: var(--surface2); }
+  .proj-code { font-size: 11px; font-weight: 700; color: var(--blue); background: var(--blue-bg); padding: 3px 8px; border-radius: 4px; white-space: nowrap; }
+  .proj-name { font-size: 13px; font-weight: 500; color: var(--text); }
+  .proj-client { font-size: 12px; color: var(--text2); }
+  .badge { font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+  .b-aktiv { background: var(--green-bg); color: var(--green); }
+  .b-befaring { background: var(--amber-bg); color: var(--amber); }
+  .b-pause { background: var(--gray-bg); color: var(--text2); }
+  .proj-note { font-size: 12px; color: var(--text2); max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* KK panel */
+  .kk-panel { background: var(--surface2); border-radius: var(--radius-sm); padding: 10px 12px; display: flex; align-items: center; gap: 10px; }
+  .kk-status { font-size: 12px; color: var(--text2); }
+  .kk-status b { color: var(--text); }
+  .kk-connect { margin-left: auto; font-size: 12px; font-weight: 500; color: var(--blue); background: var(--blue-bg); border: none; border-radius: var(--radius-sm); padding: 5px 12px; cursor: pointer; }
+  .kk-connect:hover { background: #d0e4f8; }
+
+  /* Modal */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 200; }
+  .overlay.hidden { display: none; }
+  .modal { background: var(--surface); border-radius: var(--radius); padding: 22px 24px; width: 340px; border: 1px solid var(--border); }
+  .modal h2 { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+  .modal label { font-size: 12px; font-weight: 500; color: var(--text2); display: block; margin-bottom: 4px; margin-top: 12px; }
+  .modal label:first-of-type { margin-top: 0; }
+  .modal input, .modal select { width: 100%; padding: 8px 10px; font-size: 13px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); outline: none; }
+  .modal input:focus, .modal select:focus { border-color: var(--blue); }
+  .modal-btns { display: flex; gap: 8px; margin-top: 18px; }
+  .modal-btns button { flex: 1; padding: 8px; font-size: 13px; font-weight: 500; border-radius: var(--radius-sm); cursor: pointer; border: 1px solid var(--border); }
+  .btn-save { background: var(--text); color: white; border-color: var(--text); }
+  .btn-save:hover { background: #333; }
+  .btn-cancel { background: var(--surface); color: var(--text2); }
+  .btn-cancel:hover { background: var(--surface2); }
+
+  /* KK modal */
+  .kk-modal p { font-size: 13px; color: var(--text2); line-height: 1.6; margin-bottom: 14px; }
+  .kk-modal code { background: var(--surface2); padding: 2px 6px; border-radius: 4px; font-size: 12px; font-family: monospace; }
+
+  /* Proj modal */
+  .proj-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 200; }
+  .proj-overlay.hidden { display: none; }
+
+  /* Timer widget */
+  .timer-row { display: flex; gap: 10px; align-items: stretch; }
+  .timer-card { flex: 1; background: var(--surface2); border-radius: var(--radius-sm); padding: 10px 14px; }
+  .timer-label { font-size: 11px; color: var(--text3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
+  .timer-val { font-size: 22px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+  .timer-sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+  @media (max-width: 800px) {
+    .main { grid-template-columns: 1fr; }
+    .shortcut-grid { grid-template-columns: repeat(2,1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo-mark">
+      <svg viewBox="0 0 16 16"><path d="M2 12 L5 4 L8 10 L11 4 L14 12" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <h1>Strøkent AS</h1>
+  </div>
+  <span class="topbar-date" id="topbar-date"></span>
+</div>
+
+<div class="main">
+
+  <!-- LEFT: Calendar + events -->
+  <div style="display:flex;flex-direction:column;gap:16px;">
+
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">
+          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Kalender
+        </span>
+        <div class="cal-nav">
+          <button onclick="changeMonth(-1)">&#8249;</button>
+          <span id="month-label"></span>
+          <button onclick="changeMonth(1)">&#8250;</button>
+        </div>
+      </div>
+      <div class="card-body" style="padding-bottom:8px;">
+        <div class="cal-grid" id="cal-grid"></div>
+        <div class="events-section">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div class="events-date" id="events-date"></div>
+            <button class="add-btn" onclick="openEventModal()">+ Legg til</button>
+          </div>
+          <div id="event-list"></div>
+          <div class="legend">
+            <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>Befaring</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Møte</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>Oppgave</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right-col">
+
+    <!-- Shortcuts -->
+    <div>
+      <div class="shortcut-grid">
+        <a class="shortcut" href="https://go.poweroffice.net" target="_blank">
+          <div class="shortcut-icon si-pogo">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          </div>
+          <span class="shortcut-name">PowerOffice</span>
+          <span class="shortcut-sub">Bilag &amp; faktura</span>
+        </a>
+        <a class="shortcut" href="https://app.kvalitetskontroll.no" target="_blank">
+          <div class="shortcut-icon si-kk">
+            <svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          </div>
+          <span class="shortcut-name">Kvalitetskontroll</span>
+          <span class="shortcut-sub">Timer &amp; prosjekt</span>
+        </a>
+        <a class="shortcut" href="https://www.malproff.no" target="_blank">
+          <div class="shortcut-icon si-mal">
+            <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          </div>
+          <span class="shortcut-name">Malproff</span>
+          <span class="shortcut-sub">Materiell</span>
+        </a>
+        <a class="shortcut" href="https://www.dnb.no/bedrift" target="_blank">
+          <div class="shortcut-icon si-dnb">
+            <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <span class="shortcut-name">DNB Nettbank</span>
+          <span class="shortcut-sub">Bedrift</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- KK integration status -->
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Kvalitetskontroll — tilkobling
+        </span>
+      </div>
+      <div class="card-body">
+        <div class="kk-panel" id="kk-panel">
+          <div class="kk-status" id="kk-status">Ikke koblet til ennå. Legg inn API-nøkkel når du har den fra support.</div>
+          <button class="kk-connect" onclick="openKKModal()">Koble til</button>
+        </div>
+        <div id="kk-projects" style="margin-top:12px;display:none;"></div>
+      </div>
+    </div>
+
+    <!-- Projects -->
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">
+          <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          Aktive prosjekter
+        </span>
+        <button class="add-btn" onclick="openProjModal()">+ Nytt prosjekt</button>
+      </div>
+      <div class="card-body" style="padding:0;">
+        <table class="proj-table" id="proj-table">
+          <thead>
+            <tr>
+              <th>Kode</th>
+              <th>Prosjekt</th>
+              <th>Status</th>
+              <th>Notat</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="proj-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Event modal -->
+<div class="overlay hidden" id="ev-overlay">
+  <div class="modal">
+    <h2>Nytt gjøremål</h2>
+    <label>Tittel</label>
+    <input type="text" id="ev-title" placeholder="f.eks. Befaring Tromsø Handelssenter">
+    <label>Dato</label>
+    <input type="date" id="ev-date">
+    <label>Klokkeslett</label>
+    <input type="time" id="ev-time">
+    <label>Type</label>
+    <select id="ev-type">
+      <option value="befaring">Befaring</option>
+      <option value="mote">Møte</option>
+      <option value="oppgave">Oppgave</option>
+    </select>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeEventModal()">Avbryt</button>
+      <button class="btn-save" onclick="saveEvent()">Lagre</button>
+    </div>
+  </div>
+</div>
+
+<!-- Project modal -->
+<div class="proj-overlay hidden" id="proj-overlay">
+  <div class="modal">
+    <h2>Nytt prosjekt</h2>
+    <label>Prosjektkode</label>
+    <input type="text" id="p-code" placeholder="f.eks. 2405">
+    <label>Prosjektnavn</label>
+    <input type="text" id="p-name" placeholder="f.eks. Tromsø Handelssenter">
+    <label>Kunde</label>
+    <input type="text" id="p-client" placeholder="f.eks. Tromsø Eiendom AS">
+    <label>Status</label>
+    <select id="p-status">
+      <option value="befaring">Befaring</option>
+      <option value="aktiv">Aktiv</option>
+      <option value="pause">Pause</option>
+    </select>
+    <label>Notat</label>
+    <input type="text" id="p-note" placeholder="Valgfritt notat">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeProjModal()">Avbryt</button>
+      <button class="btn-save" onclick="saveProj()">Lagre</button>
+    </div>
+  </div>
+</div>
+
+<!-- KK modal -->
+<div class="overlay hidden" id="kk-overlay">
+  <div class="modal">
+    <h2>Koble til Kvalitetskontroll</h2>
+    <p style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:14px;">Lim inn API-nøkkelen du opprettet i Kvalitetskontroll. Nøkkelen lagres kun lokalt i din nettleser.</p>
+    <label>Brukernavn (e-post)</label>
+    <input type="email" id="kk-user" placeholder="simen@strokent.no">
+    <label>Personal Access Token</label>
+    <input type="text" id="kk-key" placeholder="Lim inn nøkkelen her">
+    <div id="kk-error" style="display:none;margin-top:10px;font-size:12px;color:#a83232;background:#fde8e8;padding:8px 10px;border-radius:6px;"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeKKModal()">Avbryt</button>
+      <button class="btn-save" id="kk-save-btn" onclick="saveKK()">Koble til</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const MONTHS = ['januar','februar','mars','april','mai','juni','juli','august','september','oktober','november','desember'];
+const DAYS = ['ma','ti','on','to','fr','lø','sø'];
+
+const now = new Date();
+let viewYear = now.getFullYear();
+let viewMonth = now.getMonth();
+let selectedKey = dateKey(now);
+
+function dateKey(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function load(k, def) {
+  try { return JSON.parse(localStorage.getItem(k)) || def; } catch(e) { return def; }
+}
+function save(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
+
+let events = load('strokent_events', {});
+let projects = load('strokent_projects', [
+  {code:'2401', name:'Tromsø Handelssenter', client:'Tromsø Eiendom AS', status:'aktiv', note:'Innvendig maling, 3. etg'},
+  {code:'2402', name:'Skarven Restaurant', client:'Skarven Drift AS', status:'aktiv', note:'Tapetsering kjøkken'},
+  {code:'2403', name:'Kystverket kontor', client:'Kystverket', status:'befaring', note:'Befaring avtalt mandag'},
+]);
+
+// Topbar date
+document.getElementById('topbar-date').textContent = now.toLocaleDateString('nb-NO', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+
+// Calendar
+function renderCal() {
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+  DAYS.forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'cal-dn';
+    el.textContent = d;
+    grid.appendChild(el);
+  });
+  const first = new Date(viewYear, viewMonth, 1);
+  let startDay = first.getDay() - 1;
+  if (startDay < 0) startDay = 6;
+  const daysInMonth = new Date(viewYear, viewMonth+1, 0).getDate();
+  const prevDays = new Date(viewYear, viewMonth, 0).getDate();
+
+  for (let i = startDay-1; i >= 0; i--) {
+    const el = document.createElement('div');
+    el.className = 'cal-day other';
+    el.textContent = prevDays - i;
+    grid.appendChild(el);
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const el = document.createElement('div');
+    el.className = 'cal-day';
+    el.textContent = d;
+    const key = viewYear + '-' + String(viewMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    if (key === dateKey(now)) el.classList.add('today');
+    if (key === selectedKey) el.classList.add('selected');
+    if (events[key] && events[key].length) el.classList.add('has-event');
+    el.onclick = () => { selectedKey = key; renderCal(); renderEvents(); };
+    grid.appendChild(el);
+  }
+  document.getElementById('month-label').textContent = MONTHS[viewMonth] + ' ' + viewYear;
+}
+
+function changeMonth(dir) {
+  viewMonth += dir;
+  if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+  if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+  renderCal();
+}
+
+function renderEvents() {
+  const list = document.getElementById('event-list');
+  list.innerHTML = '';
+  const parts = selectedKey.split('-');
+  const label = parseInt(parts[2]) + '. ' + MONTHS[parseInt(parts[1])-1];
+  document.getElementById('events-date').textContent = label;
+  const dayEvents = events[selectedKey] || [];
+  if (!dayEvents.length) {
+    list.innerHTML = '<div class="events-empty">Ingen gjøremål denne dagen</div>';
+    return;
+  }
+  dayEvents.forEach((ev, i) => {
+    const el = document.createElement('div');
+    el.className = 'event-item ev-' + ev.type;
+    el.innerHTML = `<div class="event-dot"></div>
+      <div class="event-info">
+        <div class="event-title">${ev.title}</div>
+        ${ev.time ? '<div class="event-meta">kl. ' + ev.time + '</div>' : ''}
+      </div>
+      <button class="event-del" onclick="deleteEvent('${selectedKey}',${i})" title="Slett">×</button>`;
+    list.appendChild(el);
+  });
+}
+
+function openEventModal() {
+  document.getElementById('ev-date').value = selectedKey;
+  document.getElementById('ev-title').value = '';
+  document.getElementById('ev-time').value = '';
+  document.getElementById('ev-overlay').classList.remove('hidden');
+}
+function closeEventModal() { document.getElementById('ev-overlay').classList.add('hidden'); }
+function saveEvent() {
+  const title = document.getElementById('ev-title').value.trim();
+  const date = document.getElementById('ev-date').value;
+  const time = document.getElementById('ev-time').value;
+  const type = document.getElementById('ev-type').value;
+  if (!title || !date) return;
+  if (!events[date]) events[date] = [];
+  events[date].push({title, time, type});
+  save('strokent_events', events);
+  selectedKey = date;
+  viewYear = parseInt(date.split('-')[0]);
+  viewMonth = parseInt(date.split('-')[1]) - 1;
+  closeEventModal();
+  renderCal();
+  renderEvents();
+}
+function deleteEvent(date, idx) {
+  events[date].splice(idx, 1);
+  if (!events[date].length) delete events[date];
+  save('strokent_events', events);
+  renderCal();
+  renderEvents();
+}
+
+// Projects
+function renderProjects() {
+  const tbody = document.getElementById('proj-tbody');
+  tbody.innerHTML = '';
+  projects.forEach((p, i) => {
+    const tr = document.createElement('tr');
+    const statusMap = {aktiv:'Aktiv', befaring:'Befaring', pause:'Pause'};
+    tr.innerHTML = `
+      <td><span class="proj-code">${p.code}</span></td>
+      <td><div class="proj-name">${p.name}</div><div class="proj-client">${p.client}</div></td>
+      <td><span class="badge b-${p.status}">${statusMap[p.status]||p.status}</span></td>
+      <td><span class="proj-note">${p.note||'—'}</span></td>
+      <td><button onclick="deleteProj(${i})" style="background:none;border:none;cursor:pointer;color:#ccc;font-size:16px;" title="Slett">×</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+function openProjModal() { document.getElementById('proj-overlay').classList.remove('hidden'); }
+function closeProjModal() { document.getElementById('proj-overlay').classList.add('hidden'); }
+function saveProj() {
+  const code = document.getElementById('p-code').value.trim();
+  const name = document.getElementById('p-name').value.trim();
+  const client = document.getElementById('p-client').value.trim();
+  const status = document.getElementById('p-status').value;
+  const note = document.getElementById('p-note').value.trim();
+  if (!code || !name) return;
+  projects.push({code, name, client, status, note});
+  save('strokent_projects', projects);
+  closeProjModal();
+  renderProjects();
+  ['p-code','p-name','p-client','p-note'].forEach(id => document.getElementById(id).value = '');
+}
+function deleteProj(i) {
+  if (!confirm('Slette prosjektet?')) return;
+  projects.splice(i, 1);
+  save('strokent_projects', projects);
+  renderProjects();
+}
+
+// KK
+function openKKModal() { document.getElementById('kk-overlay').classList.remove('hidden'); }
+function closeKKModal() { document.getElementById('kk-overlay').classList.add('hidden'); }
+function saveKK() {
+  const user = document.getElementById('kk-user').value.trim();
+  const key = document.getElementById('kk-key').value.trim();
+  const errEl = document.getElementById('kk-error');
+  errEl.style.display = 'none';
+  if (!user) { errEl.textContent = 'Fyll inn e-postadresse.'; errEl.style.display = 'block'; return; }
+  if (!key) { errEl.textContent = 'Lim inn API-nøkkelen.'; errEl.style.display = 'block'; return; }
+  const btn = document.getElementById('kk-save-btn');
+  btn.textContent = 'Kobler til...';
+  btn.disabled = true;
+  save('strokent_kk', {key});
+  loadKKProjects(key).then(ok => {
+    if (ok) { closeKKModal(); }
+    else {
+      errEl.textContent = 'Kunne ikke koble til. Sjekk at nøkkelen er riktig.';
+      errEl.style.display = 'block';
+      btn.textContent = 'Koble til';
+      btn.disabled = false;
+    }
+  });
+}
+
+async function loadKKProjects(keyOverride) {
+  const creds = load('strokent_kk', null);
+  const token = keyOverride || (creds && creds.key);
+  if (!token) return false;
+  document.getElementById('kk-status').textContent = 'Henter prosjekter...';
+  try {
+    const res = await fetch('https://api.kvalitetskontroll.no/projects', {
+      headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const projs = Array.isArray(data) ? data : (data.data || []);
+    document.getElementById('kk-status').innerHTML = '<b>' + projs.length + ' prosjekter</b> hentet fra Kvalitetskontroll ✓';
+    const container = document.getElementById('kk-projects');
+    container.style.display = 'block';
+    container.innerHTML = projs.slice(0,5).map(p =>
+      `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">
+        <span class="proj-code">${p.projectNumber||p.number||p.id}</span>
+        <span style="font-size:13px;font-weight:500;">${p.name||p.title||'Ukjent'}</span>
+        <span style="margin-left:auto;font-size:11px;color:var(--text3);">${p.status||''}</span>
+      </div>`
+    ).join('') + (projs.length > 5 ? `<div style="font-size:12px;color:var(--text3);padding-top:6px;">+ ${projs.length-5} flere prosjekter</div>` : '');
+    return true;
+  } catch(e) {
+    document.getElementById('kk-status').textContent = 'Ikke tilkoblet. Klikk "Koble til" for å prøve igjen.';
+    return false;
+  }
+}
+
+// Init
+renderCal();
+renderEvents();
+renderProjects();
+const kkCreds = load('strokent_kk', null);
+if (kkCreds) loadKKProjects();
+
+// Close modals on overlay click
+document.getElementById('ev-overlay').addEventListener('click', e => { if(e.target===e.currentTarget) closeEventModal(); });
+document.getElementById('proj-overlay').addEventListener('click', e => { if(e.target===e.currentTarget) closeProjModal(); });
+document.getElementById('kk-overlay').addEventListener('click', e => { if(e.target===e.currentTarget) closeKKModal(); });
+</script>
+</body>
+</html>
