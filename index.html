@@ -535,7 +535,7 @@ async function syncFromKK() {
     projects = raw.map(p => ({
       code: String(p.external_id || p.number || p.id || ''),
       name: p.name || p.title || 'Ukjent',
-      client: p.customerName || (p.contact && p.contact.name) || '',
+      client: p.address || p.city || (p.contact && p.contact.name) || '',
       status: mapKKStatus(p.status),
       note: p.description || p.notes || ''
     }));
