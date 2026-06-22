@@ -421,7 +421,7 @@ function renderProjects() {
     filtered.forEach(p=>{
       const ri=projects.indexOf(p);
       const tr=document.createElement('tr');
-      tr.innerHTML=`<td><span class="proj-code">${p.code||'—'}</span></td><td><div class="proj-name">${p.name}</div><div class="proj-client">${p.client||''}</div></td><td><span class="badge b-${p.status||'pause'}">${statusMap[p.status]||'—'}</span></td><td style="display:none"><span class="proj-note">${p.note||'—'}</span></td><td><button onclick="deleteProj(${ri})" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:15px;"><i class="ti ti-x"></i></button></td>`;
+      tr.innerHTML=`<td><span class="proj-code">${p.code||'—'}</span></td><td><div class="proj-name">${p.name}</div><div class="proj-client">${p.client||''}</div></td><td><span class="badge b-${p.status||'pause'}">${statusMap[p.status]||'—'}</span></td><td><button onclick="deleteProj(${ri})" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:15px;"><i class="ti ti-x"></i></button></td>`;
       tbody.appendChild(tr);
     });
   }
