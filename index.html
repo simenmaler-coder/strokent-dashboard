@@ -494,7 +494,7 @@ async function syncFromKK() {
       name:p.name||p.title||'Ukjent',
       client:p.address||p.city||'',
       status:mapStatus(p.status),
-      note:p.description||''     })).sort((a,b) => b.id - a.id)
+      note:p.description||''     })).sort((a,b) => b.code.localeCompare(a.code, undefined, {numeric: true}))
     }));
     save('strokent_projects',projects);
     btn.innerHTML='<i class="ti ti-refresh"></i> Synkroniser'; btn.disabled=false;
