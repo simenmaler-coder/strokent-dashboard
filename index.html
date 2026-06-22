@@ -268,9 +268,21 @@
       <div class="card-head">
         <span class="card-title">
           <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-          Aktive prosjekter
+          Prosjekter
         </span>
-        <button class="add-btn" onclick="openProjModal()">+ Nytt prosjekt</button>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <button class="add-btn" id="kk-sync-btn" onclick="syncFromKK()">↻ Synkroniser</button>
+          <button class="add-btn" onclick="openProjModal()">+ Nytt</button>
+        </div>
+      </div>
+      <div style="padding:10px 16px 6px;display:flex;gap:8px;">
+        <input type="text" id="proj-search" placeholder="Søk prosjekt eller kunde..." oninput="renderProjects()" style="flex:1;padding:6px 10px;font-size:13px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);outline:none;">
+        <select id="proj-filter" onchange="renderProjects()" style="font-size:12px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text2);outline:none;">
+          <option value="">Alle</option>
+          <option value="aktiv">Aktiv</option>
+          <option value="befaring">Befaring</option>
+          <option value="pause">Pause</option>
+        </select>
       </div>
       <div class="card-body" style="padding:0;">
         <table class="proj-table" id="proj-table">
@@ -285,6 +297,7 @@
           </thead>
           <tbody id="proj-tbody"></tbody>
         </table>
+        <div id="proj-empty" style="display:none;padding:20px;font-size:13px;color:var(--text3);text-align:center;">Ingen prosjekter — trykk "Synkroniser" for å hente fra Kvalitetskontroll</div>
       </div>
     </div>
 
@@ -375,11 +388,7 @@ function load(k, def) {
 function save(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
 
 let events = load('strokent_events', {});
-let projects = load('strokent_projects', [
-  {code:'2401', name:'Tromsø Handelssenter', client:'Tromsø Eiendom AS', status:'aktiv', note:'Innvendig maling, 3. etg'},
-  {code:'2402', name:'Skarven Restaurant', client:'Skarven Drift AS', status:'aktiv', note:'Tapetsering kjøkken'},
-  {code:'2403', name:'Kystverket kontor', client:'Kystverket', status:'befaring', note:'Befaring avtalt mandag'},
-]);
+let projects = load('strokent_projects', []);
 
 // Topbar date
 document.getElementById('topbar-date').textContent = now.toLocaleDateString('nb-NO', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
@@ -485,18 +494,67 @@ function deleteEvent(date, idx) {
 // Projects
 function renderProjects() {
   const tbody = document.getElementById('proj-tbody');
+  const emptyEl = document.getElementById('proj-empty');
   tbody.innerHTML = '';
-  projects.forEach((p, i) => {
-    const tr = document.createElement('tr');
-    const statusMap = {aktiv:'Aktiv', befaring:'Befaring', pause:'Pause'};
-    tr.innerHTML = `
-      <td><span class="proj-code">${p.code}</span></td>
-      <td><div class="proj-name">${p.name}</div><div class="proj-client">${p.client}</div></td>
-      <td><span class="badge b-${p.status}">${statusMap[p.status]||p.status}</span></td>
-      <td><span class="proj-note">${p.note||'—'}</span></td>
-      <td><button onclick="deleteProj(${i})" style="background:none;border:none;cursor:pointer;color:#ccc;font-size:16px;" title="Slett">×</button></td>`;
-    tbody.appendChild(tr);
+  const search = (document.getElementById('proj-search')?.value || '').toLowerCase();
+  const filter = document.getElementById('proj-filter')?.value || '';
+  const statusMap = {aktiv:'Aktiv', befaring:'Befaring', pause:'Pause'};
+  const filtered = projects.filter(p => {
+    const matchSearch = !search || (p.name||'').toLowerCase().includes(search) || (p.client||'').toLowerCase().includes(search) || (p.code||'').toLowerCase().includes(search);
+    const matchFilter = !filter || p.status === filter;
+    return matchSearch && matchFilter;
   });
+  if (!filtered.length) {
+    emptyEl.style.display = 'block';
+    emptyEl.textContent = projects.length ? 'Ingen prosjekter matcher søket' : 'Ingen prosjekter — trykk "Synkroniser" for å hente fra Kvalitetskontroll';
+  } else {
+    emptyEl.style.display = 'none';
+    filtered.forEach((p) => {
+      const realIdx = projects.indexOf(p);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td><span class="proj-code">${p.code||'—'}</span></td><td><div class="proj-name">${p.name}</div><div class="proj-client">${p.client||''}</div></td><td><span class="badge b-${p.status||'pause'}">${statusMap[p.status]||p.status||'—'}</span></td><td><span class="proj-note">${p.note||'—'}</span></td><td><button onclick="deleteProj(${realIdx})" style="background:none;border:none;cursor:pointer;color:#ccc;font-size:16px;" title="Slett">×</button></td>`;
+      tbody.appendChild(tr);
+    });
+  }
+}
+
+async function syncFromKK() {
+  const creds = load('strokent_kk', null);
+  if (!creds) { alert('Koble til Kvalitetskontroll først.'); return; }
+  const btn = document.getElementById('kk-sync-btn');
+  btn.textContent = '↻ Henter...';
+  btn.disabled = true;
+  try {
+    const res = await fetch('https://api.kvalitetskontroll.no/projects', {
+      headers: { 'Authorization': 'Bearer ' + creds.key, 'Accept': 'application/json' }
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const raw = Array.isArray(data) ? data : (data.data || []);
+    projects = raw.map(p => ({
+      code: String(p.projectNumber || p.number || p.id || ''),
+      name: p.name || p.title || 'Ukjent',
+      client: p.customerName || (p.contact && p.contact.name) || '',
+      status: mapKKStatus(p.status),
+      note: p.description || p.notes || ''
+    }));
+    save('strokent_projects', projects);
+    btn.textContent = '↻ Synkroniser';
+    btn.disabled = false;
+    renderProjects();
+  } catch(e) {
+    btn.textContent = '↻ Synkroniser';
+    btn.disabled = false;
+    alert('Kunne ikke hente prosjekter: ' + e.message);
+  }
+}
+
+function mapKKStatus(s) {
+  if (!s) return 'aktiv';
+  const sl = String(s).toLowerCase();
+  if (sl.includes('befar') || sl.includes('quote') || sl.includes('tender')) return 'befaring';
+  if (sl.includes('pause') || sl.includes('hold') || sl.includes('stopp')) return 'pause';
+  return 'aktiv';
 }
 function openProjModal() { document.getElementById('proj-overlay').classList.remove('hidden'); }
 function closeProjModal() { document.getElementById('proj-overlay').classList.add('hidden'); }
