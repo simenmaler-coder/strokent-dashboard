@@ -526,7 +526,7 @@ async function syncFromKK() {
   btn.textContent = '↻ Henter...';
   btn.disabled = true;
   try {
-    const res = await fetch('https://api.kvalitetskontroll.no/projects', {
+    const res = await fetch('https://api.kvalitetskontroll.no/projects?sort=id&direction=desc', {
       headers: { 'Authorization': 'Bearer ' + creds.key, 'Accept': 'application/json' }
     });
     if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -610,7 +610,7 @@ async function loadKKProjects(keyOverride) {
   if (!token) return false;
   document.getElementById('kk-status').textContent = 'Henter prosjekter...';
   try {
-    const res = await fetch('https://api.kvalitetskontroll.no/projects', {
+    const res = await fetch('https://api.kvalitetskontroll.no/projects?sort=id&direction=desc', {
       headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
     });
     if (!res.ok) throw new Error('HTTP ' + res.status);
