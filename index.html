@@ -378,13 +378,13 @@ async function fetchKK(token){
     if(!res.ok)throw new Error('HTTP '+res.status);
     const data=await res.json();
     const projs=Array.isArray(data)?data:(data.data||[]);
-    document.getElementById('kk-status').innerHTML='<b>'+projs.length+' prosjekter</b> hentet fra Kvalitetskontroll ✓';
+    document.getElementById('kk-status-x').innerHTML='<b>'+projs.length+' prosjekter</b> hentet fra Kvalitetskontroll ✓';
     const container=document.getElementById('kk-projects');
     container.style.display='block';
     container.innerHTML=projs.slice(0,5).map(p=>'<div class="kk-proj-row"><span class="proj-code">'+(p.project_no||p.external_id||p.id)+'</span><span>'+p.name+'</span></div>').join('')+(projs.length>5?'<div style="font-size:12px;color:var(--text3);padding-top:6px">+ '+(projs.length-5)+' flere</div>':'');
     return true;
   }catch(e){
-    document.getElementById('kk-status').textContent='Ikke tilkoblet. Klikk "Koble til" for å prøve igjen.';
+    document.getElementById('kk-status-x').textContent='Ikke tilkoblet. Klikk "Koble til" for å prøve igjen.';
     return false;
   }
 }
