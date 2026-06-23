@@ -334,7 +334,7 @@ function renderProjects(){
   const search=(document.getElementById('proj-search')?document.getElementById('proj-search').value:'').toLowerCase();
   const filter=document.getElementById('proj-filter')?document.getElementById('proj-filter').value:'';
   const sm={aktiv:'Aktiv',befaring:'Befaring',pause:'Pause'};
-  const filtered=projects.filter(p=>{
+  const filtered=projects.slice(0,5).filter(p=>{
     const ms=!search||(p.name||'').toLowerCase().includes(search)||(p.client||'').toLowerCase().includes(search)||(p.code||'').toLowerCase().includes(search);
     const mf=!filter||p.status===filter;
     return ms&&mf;
