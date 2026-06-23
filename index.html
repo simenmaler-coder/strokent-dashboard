@@ -384,7 +384,7 @@ async function fetchKK(token){
     container.innerHTML=projs.slice(0,5).map(p=>'<div class="kk-proj-row"><span class="proj-code">'+(p.project_no||p.external_id||p.id)+'</span><span>'+p.name+'</span></div>').join('')+(projs.length>5?'<div style="font-size:12px;color:var(--text3);padding-top:6px">+ '+(projs.length-5)+' flere</div>':'');
     return true;
   }catch(e){
-    document.getElementById('kk-status-x').textContent='Ikke tilkoblet. Klikk "Koble til" for å prøve igjen.';
+    document.getElementById('kk-status-x')?.textContent='Ikke tilkoblet. Klikk "Koble til" for å prøve igjen.';
     return false;
   }
 }
